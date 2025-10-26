@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(openspec list:*)",
+      "Bash(tree:*)",
+      "Bash(dagger functions:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}
