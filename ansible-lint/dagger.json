@@ -1,0 +1,7 @@
+{
+  "name": "ansible-lint",
+  "engineVersion": "v0.19.3",
+  "sdk": {
+    "source": "python"
+  }
+}
