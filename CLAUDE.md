@@ -31,8 +31,11 @@ The repository follows a **monorepo pattern** where each top-level directory is 
 
 ```
 homelab-daggerverse/
-├── ansible/          # Dagger module for Ansible
+├── ansible/          # Dagger module for Ansible automation
+│   ├── tests/        # Test module for ansible
+│   └── examples/     # Example module showcasing usage
 ├── ansible-lint/     # Dagger module for Ansible Lint
+├── openspec/         # Specification and change management
 └── <future modules>
 ```
 
@@ -43,6 +46,15 @@ Each module follows the **Dagger Python SDK structure**:
 ├── dagger.json           # Dagger module configuration (name, engine version, SDK)
 ├── pyproject.toml        # Python project config with dagger-io dependency
 ├── src/<module>/main.py  # Main module code with @object_type and @function decorators
+├── tests/                # Test module (optional, follows same structure)
+│   ├── dagger.json
+│   ├── src/tests/main.py
+│   └── test-data/        # Test fixtures (playbooks, inventories, etc.)
+├── examples/             # Example module (optional, follows same structure)
+│   └── python/
+│       ├── dagger.json
+│       ├── src/examplespython/main.py
+│       └── example-data/ # Example fixtures
 └── sdk/                  # Embedded Python SDK (Go runtime + Python codegen)
     ├── runtime/          # Go code for Python runtime execution
     │   ├── main.go       # SDK entrypoint
@@ -88,11 +100,41 @@ dagger update
 
 **Testing Functions**:
 ```bash
-# Example: Test the container-echo function
-dagger call container-echo --string-arg="hello world"
+# Ansible module examples
+cd ansible
 
-# Example: Test the grep-dir function
-dagger call grep-dir --directory-arg=. --pattern="import"
+# Install Ansible Galaxy collections
+dagger call galaxy-install --directory=/path/to/playbook --requirements-file=requirements.yml
+
+# Run an Ansible playbook
+dagger call run-playbook --directory=/path/to/playbook --playbook=site.yml
+
+# Run playbook with inventory
+dagger call run-playbook --directory=/path/to/playbook --playbook=site.yml --inventory=inventory/hosts.ini
+
+# Run playbook with extra variables
+dagger call run-playbook --directory=/path/to/playbook --playbook=site.yml --extra-vars=env=production --extra-vars=version=2.0
+
+# Run playbook with tag filtering
+dagger call run-playbook --directory=/path/to/playbook --playbook=site.yml --tags=deploy --tags=config
+```
+
+**Running Tests**:
+```bash
+# Run all tests for the ansible module
+cd ansible
+dagger call -m tests all
+
+# Run specific test
+dagger call -m tests test-run-playbook-simple
+```
+
+**Running Examples**:
+```bash
+# Run examples to see module usage
+cd ansible
+dagger call -m examples/python simple-playbook-example
+dagger call -m examples/python advanced-playbook-example
 ```
 
 ## Module Architecture
@@ -163,6 +205,51 @@ The Python SDK supports `uv` for faster dependency management. Configure in `pyp
 [tool.dagger]
 use-uv = true
 ```
+
+### Testing and Example Modules
+
+Following Dagger best practices, modules can include test and example submodules:
+
+**Test Module Pattern** (`tests/`):
+- Create tests as Dagger functions that call the main module
+- Use `dagger install ..` to depend on parent module
+- Include test data in `test-data/` directory
+- Run all tests with `dagger call -m tests all`
+
+**Example Module Pattern** (`examples/python/`):
+- Demonstrate real-world usage of the module
+- Examples are executable and serve as living documentation
+- Include example data in `example-data/` directory
+
+## Current Modules
+
+### Ansible Module
+
+**Purpose**: Execute Ansible playbooks and manage Galaxy collections in containerized environments
+
+**Available Functions**:
+- `galaxy-install` - Install Ansible Galaxy collections from requirements.yml
+  - Parameters: `directory` (Directory), `requirements-file` (str, default: "requirements.yml")
+  - Returns: Container with collections installed
+
+- `run-playbook` - Execute Ansible playbooks with full parameter support
+  - Parameters:
+    - `directory` (Directory) - Playbook directory
+    - `playbook` (str) - Playbook file path
+    - `inventory` (str, optional) - Inventory file path
+    - `extra-vars` (list[str], optional) - Variables in key=value format
+    - `tags` (list[str], optional) - Tag filters
+  - Returns: Playbook execution output (str)
+
+**Container Image**: `alpine/ansible:latest`
+
+**Test Coverage**: 6 comprehensive tests covering all parameter combinations
+
+### Ansible-Lint Module
+
+**Status**: Placeholder module (contains example functions)
+
+**TODO**: Implement ansible-lint functionality
 
 ## Important Notes
 
