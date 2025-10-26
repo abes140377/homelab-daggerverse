@@ -1,0 +1,9 @@
+---
+- name: Hello World Playbook
+  hosts: localhost
+  connection: local
+  gather_facts: false
+  tasks:
+    - name: Say hello
+      ansible.builtin.debug:
+        msg: "Hello from Ansible Dagger module!"

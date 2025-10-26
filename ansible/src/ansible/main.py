@@ -5,18 +5,74 @@ from dagger import dag, function, object_type
 @object_type
 class Ansible:
     @function
-    def container_echo(self, string_arg: str) -> dagger.Container:
-        """Returns a container that echoes whatever string argument is provided"""
-        return dag.container().from_("alpine:latest").with_exec(["echo", string_arg])
+    def galaxy_install(
+        self,
+        directory: dagger.Directory,
+        requirements_file: str = "requirements.yml",
+    ) -> dagger.Container:
+        """Install Ansible Galaxy collections from a requirements file.
+
+        Args:
+            directory: Directory containing the Ansible playbook and requirements file
+            requirements_file: Path to the requirements file (default: requirements.yml)
+
+        Returns:
+            A container with the collections installed
+        """
+        return (
+            dag.container()
+            .from_("alpine/ansible:latest")
+            .with_mounted_directory("/work", directory)
+            .with_workdir("/work")
+            .with_exec(["ansible-galaxy", "collection", "install", "-r", requirements_file])
+        )
 
     @function
-    async def grep_dir(self, directory_arg: dagger.Directory, pattern: str) -> str:
-        """Returns lines that match a pattern in the files of the provided Directory"""
+    async def run_playbook(
+        self,
+        directory: dagger.Directory,
+        playbook: str,
+        inventory: str = "",
+        extra_vars: list[str] | None = None,
+        tags: list[str] | None = None,
+    ) -> str:
+        """Execute an Ansible playbook with optional parameters.
+
+        Args:
+            directory: Directory containing the Ansible playbook
+            playbook: Path to the playbook file (relative to directory)
+            inventory: Path to inventory file (optional)
+            extra_vars: List of extra variables in key=value format (optional)
+            tags: List of tags to filter tasks (optional)
+
+        Returns:
+            The stdout output from the playbook execution
+        """
+        # Start building the command
+        cmd = ["ansible-playbook"]
+
+        # Add inventory if provided
+        if inventory:
+            cmd.extend(["-i", inventory])
+
+        # Add extra vars if provided
+        if extra_vars:
+            for var in extra_vars:
+                cmd.extend(["--extra-vars", var])
+
+        # Add tags if provided
+        if tags:
+            cmd.extend(["--tags", ",".join(tags)])
+
+        # Add the playbook file
+        cmd.append(playbook)
+
+        # Execute the playbook
         return await (
             dag.container()
-            .from_("alpine:latest")
-            .with_mounted_directory("/mnt", directory_arg)
-            .with_workdir("/mnt")
-            .with_exec(["grep", "-R", pattern, "."])
+            .from_("alpine/ansible:latest")
+            .with_mounted_directory("/work", directory)
+            .with_workdir("/work")
+            .with_exec(cmd)
             .stdout()
         )

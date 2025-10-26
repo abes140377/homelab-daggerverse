@@ -1,0 +1,9 @@
+---
+- name: Test Playbook with Variables
+  hosts: localhost
+  connection: local
+  gather_facts: false
+  tasks:
+    - name: Print variable
+      ansible.builtin.debug:
+        msg: "Variable value: {{ test_var | default('not set') }}"

@@ -1,0 +1,19 @@
+---
+- name: Advanced Example Playbook
+  hosts: all
+  gather_facts: false
+  tasks:
+    - name: Display environment
+      ansible.builtin.debug:
+        msg: "Running in {{ environment | default('development') }}"
+      tags: info
+
+    - name: Display version
+      ansible.builtin.debug:
+        msg: "Application version: {{ app_version | default('1.0.0') }}"
+      tags: info
+
+    - name: Deploy task
+      ansible.builtin.debug:
+        msg: "Deploying application..."
+      tags: deploy

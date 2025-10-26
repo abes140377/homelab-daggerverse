@@ -1,0 +1,15 @@
+---
+- name: Test Playbook with Tags
+  hosts: localhost
+  connection: local
+  gather_facts: false
+  tasks:
+    - name: Task with test tag
+      ansible.builtin.debug:
+        msg: "This task has the test tag"
+      tags: test
+
+    - name: Task with deploy tag
+      ansible.builtin.debug:
+        msg: "This task has the deploy tag"
+      tags: deploy
