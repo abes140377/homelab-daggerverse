@@ -70,7 +70,7 @@ Each Dagger module follows this standard layout:
 - **Python Version**: Always `>=3.13` in `pyproject.toml`
 - **Type Hints**: Required on all Dagger functions (maps to Dagger API types)
 - **Async/Await**: Use for I/O operations and Dagger API calls
-- **Decorators**: 
+- **Decorators**:
   - `@object_type` on the main module class
   - `@function` on exposed Dagger functions
 - **Docstrings**: Required on all functions (becomes CLI help text)
@@ -84,7 +84,7 @@ from dagger import dag, function, object_type
 class ModuleName:
     @function
     async def example_function(
-        self, 
+        self,
         string_arg: str,
         directory_arg: dagger.Directory
     ) -> str:
