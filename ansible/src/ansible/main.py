@@ -24,7 +24,9 @@ class Ansible:
             .from_("alpine/ansible:latest")
             .with_mounted_directory("/work", directory)
             .with_workdir("/work")
-            .with_exec(["ansible-galaxy", "collection", "install", "-r", requirements_file])
+            .with_exec(
+                ["ansible-galaxy", "collection", "install", "-r", requirements_file]
+            )
         )
 
     @function
@@ -35,6 +37,7 @@ class Ansible:
         inventory: str = "",
         extra_vars: list[str] | None = None,
         tags: list[str] | None = None,
+        ssh_private_key: dagger.Secret | None = None,
     ) -> str:
         """Execute an Ansible playbook with optional parameters.
 
@@ -44,6 +47,7 @@ class Ansible:
             inventory: Path to inventory file (optional)
             extra_vars: List of extra variables in key=value format (optional)
             tags: List of tags to filter tasks (optional)
+            ssh_private_key: SSH private key for SSH connections (optional)
 
         Returns:
             The stdout output from the playbook execution
@@ -67,12 +71,24 @@ class Ansible:
         # Add the playbook file
         cmd.append(playbook)
 
-        # Execute the playbook
-        return await (
+        # Build the container
+        container = (
             dag.container()
             .from_("alpine/ansible:latest")
             .with_mounted_directory("/work", directory)
             .with_workdir("/work")
-            .with_exec(cmd)
-            .stdout()
         )
+
+        # Mount SSH key if provided
+        if ssh_private_key:
+            # Mount secret to temporary location, then copy to final destination
+            # This is necessary because mounted secrets are read-only
+            container = (
+                container.with_exec(["mkdir", "-p", "/root/.ssh"])
+                .with_mounted_secret("/tmp/ssh_key", ssh_private_key)
+                .with_exec(["cp", "/tmp/ssh_key", "/root/.ssh/ansible_id_ecdsa"])
+                .with_exec(["chmod", "600", "/root/.ssh/ansible_id_ecdsa"])
+            )
+
+        # Execute the playbook
+        return await container.with_exec(cmd).stdout()

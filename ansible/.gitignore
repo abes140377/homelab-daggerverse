@@ -2,3 +2,4 @@
 /**/__pycache__
 /sdk
 /.env
+ansible/tests/test-data/ansible_id_ecdsa.pub
