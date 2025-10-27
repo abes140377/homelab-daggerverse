@@ -11,22 +11,38 @@ class Examplespython:
         self,
         example_data: Annotated[dagger.Directory, DefaultPath("example-data")],
     ) -> str:
-        """Example: Install Ansible Galaxy collections from a requirements file.
+        """Example: Install Ansible Galaxy collections and roles from a requirements file.
 
         This example demonstrates how to use the galaxy_install function to install
-        Ansible collections specified in a requirements.yml file.
+        both Ansible collections and roles specified in a requirements.yml file.
         """
-        # Install collections from requirements.yml
+        # Install collections and roles from requirements.yml
         container = dag.ansible().galaxy_install(
             directory=example_data, requirements_file="requirements.yml"
         )
 
         # Verify ansible is available
-        result = await container.with_exec(["ansible", "--version"]).stdout()
+        ansible_version = await container.with_exec(["ansible", "--version"]).stdout()
 
-        return (
-            f"Galaxy collections installed successfully!\n\nAnsible version:\n{result}"
-        )
+        # List installed collections
+        collections = await container.with_exec(
+            ["ansible-galaxy", "collection", "list"]
+        ).stdout()
+
+        # List installed roles
+        roles = await container.with_exec(["ansible-galaxy", "role", "list"]).stdout()
+
+        return f"""Galaxy collections and roles installed successfully!
+
+Ansible version:
+{ansible_version}
+
+Installed collections:
+{collections}
+
+Installed roles:
+{roles}
+"""
 
     @function
     async def simple_playbook_example(
@@ -75,16 +91,69 @@ class Examplespython:
         self,
         example_data: Annotated[dagger.Directory, DefaultPath("example-data")],
     ) -> str:
-        """Example: Run a playbook with automatic Galaxy collection installation.
+        """Example: Run a playbook with automatic Galaxy collection and role installation.
 
         This example demonstrates how to automatically install required Ansible
-        Galaxy collections before running a playbook using the requirements_file parameter.
+        Galaxy collections and roles before running a playbook using the requirements_file parameter.
         """
-        # Run playbook with requirements file - collections will be installed automatically
+        # Run playbook with requirements file - collections and roles will be installed automatically
         result = await dag.ansible().run_playbook(
             directory=example_data,
             playbook="playbooks/hello.yml",
             requirements_file="requirements.yml",
         )
 
-        return f"Playbook execution with Galaxy collections:\n\n{result}"
+        return f"Playbook execution with Galaxy collections and roles:\n\n{result}"
+
+    @function
+    async def playbook_with_roles_example(
+        self,
+        example_data: Annotated[dagger.Directory, DefaultPath("example-data")],
+    ) -> str:
+        """Example: Run a playbook that verifies installed Ansible roles.
+
+        This example demonstrates:
+        1. Automatic installation of roles from requirements.yml
+        2. Verification that roles are correctly installed
+        3. Using assertions to ensure role availability
+        """
+        # Run playbook that checks for installed roles
+        result = await dag.ansible().run_playbook(
+            directory=example_data,
+            playbook="playbooks/with-role.yml",
+            requirements_file="requirements.yml",
+        )
+
+        return f"Playbook execution with role verification:\n\n{result}"
+
+    @function
+    async def list_installed_roles_example(
+        self,
+        example_data: Annotated[dagger.Directory, DefaultPath("example-data")],
+    ) -> str:
+        """Example: List all installed Ansible roles after galaxy install.
+
+        This example shows how to inspect what roles have been installed
+        from the requirements.yml file.
+        """
+        # Install roles and collections
+        container = dag.ansible().galaxy_install(
+            directory=example_data, requirements_file="requirements.yml"
+        )
+
+        # List all installed roles with details
+        roles_list = await container.with_exec(
+            ["ansible-galaxy", "role", "list"]
+        ).stdout()
+
+        # Show the requirements file content for reference
+        requirements_content = await example_data.file("requirements.yml").contents()
+
+        return f"""Installed Ansible Roles:
+
+Requirements file (requirements.yml):
+{requirements_content}
+
+Installed roles:
+{roles_list}
+"""

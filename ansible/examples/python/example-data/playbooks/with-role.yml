@@ -1,0 +1,39 @@
+---
+- name: Example playbook using an installed Ansible role
+  hosts: localhost
+  connection: local
+  gather_facts: true
+
+  tasks:
+    - name: Display information about installed roles
+      ansible.builtin.debug:
+        msg: "This playbook demonstrates using roles installed via ansible-galaxy"
+
+    - name: Check if geerlingguy.pip role is installed
+      ansible.builtin.stat:
+        path: "{{ lookup('env', 'HOME') }}/.ansible/roles/geerlingguy.pip"
+      register: pip_role_path
+
+    - name: Check if geerlingguy.docker role is installed
+      ansible.builtin.stat:
+        path: "{{ lookup('env', 'HOME') }}/.ansible/roles/geerlingguy.docker"
+      register: docker_role_path
+
+    - name: Display role installation status
+      ansible.builtin.debug:
+        msg: |
+          Role installation status:
+          - geerlingguy.pip: {{ 'INSTALLED' if pip_role_path.stat.exists else 'NOT FOUND' }}
+          - geerlingguy.docker: {{ 'INSTALLED' if docker_role_path.stat.exists else 'NOT FOUND' }}
+
+    - name: Verify both roles are available
+      ansible.builtin.assert:
+        that:
+          - pip_role_path.stat.exists
+          - docker_role_path.stat.exists
+        success_msg: "✓ All required roles are installed and available"
+        fail_msg: "✗ Some roles are missing - ensure requirements.yml includes all needed roles"
+
+    - name: Success message
+      ansible.builtin.debug:
+        msg: "✓ Successfully verified role installation from requirements.yml"
