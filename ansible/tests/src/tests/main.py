@@ -11,7 +11,7 @@ class Tests:
         self,
         test_data: Annotated[dagger.Directory, DefaultPath("test-data")],
     ) -> str:
-        """Test ansible-galaxy collection install functionality"""
+        """Test ansible-galaxy collection and role install functionality"""
         # Get test data directory
         test_dir = test_data
 
@@ -27,6 +27,61 @@ class Tests:
             )
 
         return "test_galaxy_install: PASSED"
+
+    @function
+    async def test_galaxy_install_roles(
+        self,
+        test_data: Annotated[dagger.Directory, DefaultPath("test-data")],
+    ) -> str:
+        """Test that ansible-galaxy correctly installs roles from requirements.yml"""
+        # Get test data directory
+        test_dir = test_data
+
+        # Run galaxy install
+        container = dag.ansible().galaxy_install(directory=test_dir)
+
+        # Check if roles were installed by listing the roles directory
+        roles_list = await container.with_exec(
+            ["ansible-galaxy", "role", "list"]
+        ).stdout()
+
+        # Verify that the expected roles are installed
+        if "geerlingguy.docker" not in roles_list:
+            raise Exception(
+                f"Role geerlingguy.docker not found in installed roles. Output: {roles_list}"
+            )
+
+        if "geerlingguy.pip" not in roles_list:
+            raise Exception(
+                f"Role geerlingguy.pip not found in installed roles. Output: {roles_list}"
+            )
+
+        return "test_galaxy_install_roles: PASSED - Roles geerlingguy.docker and geerlingguy.pip installed successfully"
+
+    @function
+    async def test_galaxy_install_collections(
+        self,
+        test_data: Annotated[dagger.Directory, DefaultPath("test-data")],
+    ) -> str:
+        """Test that ansible-galaxy correctly installs collections from requirements.yml"""
+        # Get test data directory
+        test_dir = test_data
+
+        # Run galaxy install
+        container = dag.ansible().galaxy_install(directory=test_dir)
+
+        # Check if collections were installed
+        collections_list = await container.with_exec(
+            ["ansible-galaxy", "collection", "list"]
+        ).stdout()
+
+        # Verify that the expected collection is installed
+        if "community.general" not in collections_list:
+            raise Exception(
+                f"Collection community.general not found in installed collections. Output: {collections_list}"
+            )
+
+        return "test_galaxy_install_collections: PASSED - Collection community.general installed successfully"
 
     @function
     async def test_run_playbook_simple(
@@ -152,11 +207,11 @@ class Tests:
         self,
         test_data: Annotated[dagger.Directory, DefaultPath("test-data")],
     ) -> str:
-        """Test running a playbook with galaxy collections from requirements.yml"""
+        """Test running a playbook with galaxy collections and roles from requirements.yml"""
         # Get test data directory
         test_dir = test_data
 
-        # Run playbook with requirements file to install collections first
+        # Run playbook with requirements file to install collections and roles first
         result = await dag.ansible().run_playbook(
             directory=test_dir,
             playbook="playbooks/simple.yml",
@@ -169,6 +224,30 @@ class Tests:
             )
 
         return "test_run_playbook_with_requirements: PASSED"
+
+    @function
+    async def test_run_playbook_with_role(
+        self,
+        test_data: Annotated[dagger.Directory, DefaultPath("test-data")],
+    ) -> str:
+        """Test running a playbook that verifies installed roles"""
+        # Get test data directory
+        test_dir = test_data
+
+        # Run playbook that checks for installed roles
+        result = await dag.ansible().run_playbook(
+            directory=test_dir,
+            playbook="playbooks/with-role.yml",
+            requirements_file="requirements.yml",
+        )
+
+        # Check if the role was found and the assertion passed
+        if "Role geerlingguy.pip is installed and available" not in result:
+            raise Exception(
+                f"Role verification test failed: role not found or assertion failed. Output: {result}"
+            )
+
+        return "test_run_playbook_with_role: PASSED - Role successfully installed and verified"
 
     @function
     async def test_ssh_key_mounting(
@@ -259,12 +338,15 @@ class Tests:
 
         # Run all tests
         results.append(await self.test_galaxy_install(test_data))
+        results.append(await self.test_galaxy_install_roles(test_data))
+        results.append(await self.test_galaxy_install_collections(test_data))
         results.append(await self.test_run_playbook_simple(test_data))
         results.append(await self.test_run_playbook_with_inventory(test_data))
         results.append(await self.test_run_playbook_with_extra_vars(test_data))
         results.append(await self.test_run_playbook_with_tags(test_data))
         results.append(await self.test_run_playbook_all_parameters(test_data))
         results.append(await self.test_run_playbook_with_requirements(test_data))
+        results.append(await self.test_run_playbook_with_role(test_data))
         results.append(await self.test_ssh_key_mounting(test_data))
         results.append(await self.test_ssh_key_file_exists(test_data))
 

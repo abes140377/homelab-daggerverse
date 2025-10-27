@@ -1,0 +1,22 @@
+---
+- name: Test playbook with Ansible role
+  hosts: localhost
+  connection: local
+  gather_facts: false
+
+  tasks:
+    - name: Verify geerlingguy.pip role is available
+      ansible.builtin.stat:
+        path: "{{ lookup('env', 'HOME') }}/.ansible/roles/geerlingguy.pip"
+      register: role_path
+
+    - name: Display role availability
+      ansible.builtin.debug:
+        msg: "Role geerlingguy.pip is {{ 'available' if role_path.stat.exists else 'NOT available' }}"
+
+    - name: Assert role was installed
+      ansible.builtin.assert:
+        that:
+          - role_path.stat.exists
+        fail_msg: "Role geerlingguy.pip was not installed correctly"
+        success_msg: "Role geerlingguy.pip is installed and available"
