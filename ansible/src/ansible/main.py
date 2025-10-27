@@ -92,3 +92,39 @@ class Ansible:
 
         # Execute the playbook
         return await container.with_exec(cmd).stdout()
+
+    @function
+    def debug_container(
+        self,
+        directory: dagger.Directory,
+        ssh_private_key: dagger.Secret | None = None,
+    ) -> dagger.Container:
+        """Return an interactive container for debugging and testing.
+
+        Args:
+            directory: Directory containing the Ansible playbook
+            ssh_private_key: SSH private key for SSH connections (optional)
+
+        Returns:
+            A container with shell access for interactive debugging
+        """
+        # Build the container
+        container = (
+            dag.container()
+            .from_("alpine/ansible:latest")
+            .with_mounted_directory("/work", directory)
+            .with_workdir("/work")
+        )
+
+        # Mount SSH key if provided
+        if ssh_private_key:
+            # Mount secret to temporary location, then copy to final destination
+            # This is necessary because mounted secrets are read-only
+            container = (
+                container.with_exec(["mkdir", "-p", "/root/.ssh"])
+                .with_mounted_secret("/tmp/ssh_key", ssh_private_key)
+                .with_exec(["cp", "/tmp/ssh_key", "/root/.ssh/ansible_id_ecdsa"])
+                .with_exec(["chmod", "600", "/root/.ssh/ansible_id_ecdsa"])
+            )
+
+        return container
