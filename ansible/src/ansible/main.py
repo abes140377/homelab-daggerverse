@@ -24,6 +24,7 @@ class Ansible:
             .from_("alpine/ansible:latest")
             .with_mounted_directory("/work", directory)
             .with_workdir("/work")
+            .with_exec(["ansible-galaxy", "role", "install", "-r", requirements_file])
             .with_exec(
                 ["ansible-galaxy", "collection", "install", "-r", requirements_file]
             )
