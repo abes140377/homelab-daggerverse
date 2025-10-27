@@ -148,6 +148,29 @@ class Tests:
         return "test_run_playbook_all_parameters: PASSED"
 
     @function
+    async def test_run_playbook_with_requirements(
+        self,
+        test_data: Annotated[dagger.Directory, DefaultPath("test-data")],
+    ) -> str:
+        """Test running a playbook with galaxy collections from requirements.yml"""
+        # Get test data directory
+        test_dir = test_data
+
+        # Run playbook with requirements file to install collections first
+        result = await dag.ansible().run_playbook(
+            directory=test_dir,
+            playbook="playbooks/simple.yml",
+            requirements_file="requirements.yml",
+        )
+
+        if "Test successful!" not in result:
+            raise Exception(
+                "Playbook with requirements test failed: expected message not found"
+            )
+
+        return "test_run_playbook_with_requirements: PASSED"
+
+    @function
     async def test_ssh_key_mounting(
         self,
         test_data: Annotated[dagger.Directory, DefaultPath("test-data")],
@@ -241,6 +264,7 @@ class Tests:
         results.append(await self.test_run_playbook_with_extra_vars(test_data))
         results.append(await self.test_run_playbook_with_tags(test_data))
         results.append(await self.test_run_playbook_all_parameters(test_data))
+        results.append(await self.test_run_playbook_with_requirements(test_data))
         results.append(await self.test_ssh_key_mounting(test_data))
         results.append(await self.test_ssh_key_file_exists(test_data))
 

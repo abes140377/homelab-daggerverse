@@ -38,6 +38,7 @@ class Ansible:
         extra_vars: list[str] | None = None,
         tags: list[str] | None = None,
         ssh_private_key: dagger.Secret | None = None,
+        requirements_file: str = "",
     ) -> str:
         """Execute an Ansible playbook with optional parameters.
 
@@ -48,6 +49,7 @@ class Ansible:
             extra_vars: List of extra variables in key=value format (optional)
             tags: List of tags to filter tasks (optional)
             ssh_private_key: SSH private key for SSH connections (optional)
+            requirements_file: Path to requirements file for galaxy collections (optional)
 
         Returns:
             The stdout output from the playbook execution
@@ -71,13 +73,16 @@ class Ansible:
         # Add the playbook file
         cmd.append(playbook)
 
-        # Build the container
-        container = (
-            dag.container()
-            .from_("alpine/ansible:latest")
-            .with_mounted_directory("/work", directory)
-            .with_workdir("/work")
-        )
+        # Build the container - use galaxy_install if requirements file is provided
+        if requirements_file:
+            container = self.galaxy_install(directory, requirements_file)
+        else:
+            container = (
+                dag.container()
+                .from_("alpine/ansible:latest")
+                .with_mounted_directory("/work", directory)
+                .with_workdir("/work")
+            )
 
         # Mount SSH key if provided
         if ssh_private_key:
@@ -92,39 +97,3 @@ class Ansible:
 
         # Execute the playbook
         return await container.with_exec(cmd).stdout()
-
-    # @function
-    # def debug_container(
-    #     self,
-    #     directory: dagger.Directory,
-    #     ssh_private_key: dagger.Secret | None = None,
-    # ) -> dagger.Container:
-    #     """Return an interactive container for debugging and testing.
-
-    #     Args:
-    #         directory: Directory containing the Ansible playbook
-    #         ssh_private_key: SSH private key for SSH connections (optional)
-
-    #     Returns:
-    #         A container with shell access for interactive debugging
-    #     """
-    #     # Build the container
-    #     container = (
-    #         dag.container()
-    #         .from_("alpine/ansible:latest")
-    #         .with_mounted_directory("/work", directory)
-    #         .with_workdir("/work")
-    #     )
-
-    #     # Mount SSH key if provided
-    #     if ssh_private_key:
-    #         # Mount secret to temporary location, then copy to final destination
-    #         # This is necessary because mounted secrets are read-only
-    #         container = (
-    #             container.with_exec(["mkdir", "-p", "/root/.ssh"])
-    #             .with_mounted_secret("/tmp/ssh_key", ssh_private_key)
-    #             .with_exec(["cp", "/tmp/ssh_key", "/root/.ssh/ansible_id_ecdsa"])
-    #             .with_exec(["chmod", "600", "/root/.ssh/ansible_id_ecdsa"])
-    #         )
-
-    #     return container
