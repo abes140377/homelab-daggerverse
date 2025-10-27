@@ -12,4 +12,7 @@ enter = [
   'mise i -q',
   #
   'pre-commit install',
+  #
+  'echo "$TEST_SSH_PRIVATE_KEY" > ansible/tests/test-data/test_id_ecdsa',
+  'chmod 600 ansible/tests/test-data/test_id_ecdsa'
 ]

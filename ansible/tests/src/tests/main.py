@@ -158,7 +158,7 @@ class Tests:
 
         # Load the SSH key as a secret
         ssh_key = dag.set_secret(
-            "test-ssh-key", await test_dir.file("ansible_id_ecdsa").contents()
+            "test-ssh-key", await test_dir.file("test_id_ecdsa").contents()
         )
 
         # Get a container with the SSH key mounted (via run_playbook but we'll inspect the container)
@@ -186,7 +186,7 @@ class Tests:
 
         # Load the SSH key as a secret
         ssh_key = dag.set_secret(
-            "test-ssh-key", await test_dir.file("ansible_id_ecdsa").contents()
+            "test-ssh-key", await test_dir.file("test_id_ecdsa").contents()
         )
 
         # Build a container with the SSH key using ansible module
