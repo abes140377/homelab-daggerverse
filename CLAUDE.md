@@ -34,8 +34,10 @@ homelab-daggerverse/
 ├── ansible/          # Dagger module for Ansible automation
 │   ├── tests/        # Test module for ansible
 │   └── examples/     # Example module showcasing usage
-├── ansible-lint/     # Dagger module for Ansible Lint
-├── openspec/         # Specification and change management
+├── ansible-lint/     # Dagger module for Ansible Lint (placeholder)
+├── openspec/         # OpenSpec specification and change management
+├── docs/             # Documentation (if present)
+├── tmp/              # Temporary files (gitignored)
 └── <future modules>
 ```
 
@@ -73,6 +75,11 @@ Each module follows the **Dagger Python SDK structure**:
 ```bash
 mise install  # Install dagger 0.19.3
 ```
+
+**Note**: `mise` is configured with enter hooks that automatically:
+- Install dagger and other tools
+- Set up pre-commit hooks
+- Configure test SSH keys from `$TEST_SSH_PRIVATE_KEY` environment variable
 
 **Module Development**:
 ```bash
@@ -117,6 +124,9 @@ dagger call run-playbook --directory=/path/to/playbook --playbook=site.yml --ext
 
 # Run playbook with tag filtering
 dagger call run-playbook --directory=/path/to/playbook --playbook=site.yml --tags=deploy --tags=config
+
+# Run playbook with SSH private key (for remote host connections)
+dagger call run-playbook --directory=/path/to/playbook --playbook=site.yml --ssh-private-key=env:SSH_PRIVATE_KEY
 ```
 
 **Running Tests**:
@@ -239,17 +249,29 @@ Following Dagger best practices, modules can include test and example submodules
     - `inventory` (str, optional) - Inventory file path
     - `extra-vars` (list[str], optional) - Variables in key=value format
     - `tags` (list[str], optional) - Tag filters
+    - `ssh-private-key` (Secret, optional) - SSH private key for remote connections
   - Returns: Playbook execution output (str)
 
 **Container Image**: `alpine/ansible:latest`
 
-**Test Coverage**: 6 comprehensive tests covering all parameter combinations
+**Test Coverage**: 8 comprehensive tests covering all parameter combinations, including:
+- Simple playbook execution
+- Inventory configuration
+- Extra variables
+- Tag filtering
+- All parameters combined
+- Galaxy collection installation
+- SSH key mounting and file permissions
 
 ### Ansible-Lint Module
 
-**Status**: Placeholder module (contains example functions)
+**Status**: Placeholder module (contains example functions only)
 
-**TODO**: Implement ansible-lint functionality
+**Current Functions**:
+- `container-echo` - Example function that echoes a string in a container
+- `grep-dir` - Example function that greps for patterns in a directory
+
+**TODO**: Replace example functions with actual ansible-lint functionality
 
 ## Important Notes
 
