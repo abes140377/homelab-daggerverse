@@ -1,0 +1,9 @@
+---
+# Test requirements file with GitHub-based roles to verify git is installed
+roles:
+  - src: https://github.com/geerlingguy/ansible-role-docker.git
+    name: docker
+    version: 7.4.1
+  - src: https://github.com/geerlingguy/ansible-role-pip.git
+    name: pip
+    version: 3.0.0

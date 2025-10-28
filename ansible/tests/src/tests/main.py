@@ -329,6 +329,43 @@ class Tests:
         return "test_ssh_key_file_exists: PASSED - File exists with correct permissions (600) and non-zero size"
 
     @function
+    async def test_galaxy_install_github_roles(
+        self,
+        test_data: Annotated[dagger.Directory, DefaultPath("test-data")],
+    ) -> str:
+        """Test that ansible-galaxy can install roles from GitHub (requires git)"""
+        # Get test data directory
+        test_dir = test_data
+
+        # Run galaxy install with GitHub-based requirements
+        container = dag.ansible().galaxy_install(
+            directory=test_dir, requirements_file="requirements-github.yml"
+        )
+
+        # Verify git is installed
+        git_version = await container.with_exec(["git", "--version"]).stdout()
+        if "git version" not in git_version:
+            raise Exception(f"Git is not installed in container. Output: {git_version}")
+
+        # Check if roles were installed by listing the roles directory
+        roles_list = await container.with_exec(
+            ["ansible-galaxy", "role", "list"]
+        ).stdout()
+
+        # Verify that the expected roles are installed
+        if "docker" not in roles_list:
+            raise Exception(
+                f"Role docker (from GitHub) not found in installed roles. Output: {roles_list}"
+            )
+
+        if "pip" not in roles_list:
+            raise Exception(
+                f"Role pip (from GitHub) not found in installed roles. Output: {roles_list}"
+            )
+
+        return "test_galaxy_install_github_roles: PASSED - Git installed and GitHub-based roles installed successfully"
+
+    @function
     async def all(
         self,
         test_data: Annotated[dagger.Directory, DefaultPath("test-data")],
@@ -349,6 +386,7 @@ class Tests:
         results.append(await self.test_run_playbook_with_role(test_data))
         results.append(await self.test_ssh_key_mounting(test_data))
         results.append(await self.test_ssh_key_file_exists(test_data))
+        results.append(await self.test_galaxy_install_github_roles(test_data))
 
         # Return summary
         return "\n".join(results) + "\n\nAll tests PASSED!"

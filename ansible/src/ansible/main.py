@@ -22,6 +22,7 @@ class Ansible:
         return (
             dag.container()
             .from_("alpine/ansible:latest")
+            .with_exec(["apk", "add", "--no-cache", "git"])
             .with_mounted_directory("/work", directory)
             .with_workdir("/work")
             .with_exec(["ansible-galaxy", "role", "install", "-r", requirements_file])
@@ -81,6 +82,7 @@ class Ansible:
             container = (
                 dag.container()
                 .from_("alpine/ansible:latest")
+                .with_exec(["apk", "add", "--no-cache", "git"])
                 .with_mounted_directory("/work", directory)
                 .with_workdir("/work")
             )
